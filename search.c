@@ -5,6 +5,11 @@
 int mateValue = 32000;
 unsigned long long nodes = 0;
 
+clock_t search_start;
+int time_limit = 0;
+int stop_search = 0;
+int move_overhead = 150;
+
 void OrderMoves(MoveList *moves, const Board *board) {
     int scores[220];
 
@@ -106,6 +111,12 @@ int SearchAllCaptures(int alpha, int beta, const Board *board) {
 
 int Search(int depth, int ply, const Board *board, int bestMove[3], int alpha, int beta) {
     nodes++;
+    if (depth >= 2 && time_limit > 0 && elapsed_ms() >= time_limit) {
+        stop_search = 1;   // out of time 
+    }
+    if (stop_search) {
+        return 0;
+    }
 
     if (depth == 0) {
         return SearchAllCaptures(alpha, beta, board);
@@ -157,6 +168,35 @@ int Search(int depth, int ply, const Board *board, int bestMove[3], int alpha, i
 
     return best;
 }
+
+
+int Iterative_Deepening(const Board *board, int max_depth, int bestMove[3]) {
+    int score = 0;
+    stop_search = 0;
+
+    for (int depth = 1; depth <= max_depth; depth++) {
+        int move[3];
+        int s = Search(depth, 0, board, move, -INF, INF);
+
+        if (stop_search) {
+            break;         // ran out of time mid-depth, keep the last finished move
+        }
+
+        bestMove[0] = move[0];
+        bestMove[1] = move[1];
+        bestMove[2] = move[2];
+        score = s;
+
+        printf("info depth %d score cp %d\n", depth, score);
+        fflush(stdout);
+
+        if (time_limit > 0 && elapsed_ms() >= time_limit / 2) {
+            break;         // not enough time left for another depth
+        }
+    }
+    return score;
+}
+
 
 unsigned long long Perft(int depth, const Board *board) {
     if (depth == 0) {

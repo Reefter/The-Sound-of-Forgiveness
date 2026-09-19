@@ -4,6 +4,7 @@
 #include <time.h>
 #include "board.h"
 
+
 const char *fens[] = {
     "r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
     "4rrk1/2p1b1p1/p1p3q1/4p3/2P2n1p/1P1NR2P/PB3PP1/3R1QK1 b - - 2 24",
@@ -60,6 +61,8 @@ const char *fens[] = {
 #define FEN_COUNT (sizeof(fens) / sizeof(fens[0]))
 
 void RunBench(int depth) {
+    time_limit = 0;
+    stop_search = 0;
     unsigned long long total = 0;
     clock_t start = clock();
 
@@ -96,7 +99,7 @@ int main(int argc, char **argv) {
     Board current_board = fen_to_board(fen);
     
 
-    char line[8192];
+    char line[20000];
 
     while (1) {
 
@@ -212,13 +215,34 @@ int main(int argc, char **argv) {
             }
         }
         else if (strncmp(line, "go", 2) == 0) {
-            int bestMove[3] = {0, 0, 0};
-            int target_depth = 4;
-            
-            int eval = Search(target_depth, 0, &current_board, bestMove, -INF, INF);
+            search_start = clock();
 
-            printf("info depth %d score cp %d\n", target_depth, eval);
-            fflush(stdout);
+            int wtime = 0;
+            int btime = 0;
+
+            char *p = strstr(line, "wtime");
+            if (p != NULL) {
+                wtime = atoi(p + 6);           
+            }
+            p = strstr(line, "btime");
+            if (p != NULL) {
+                btime = atoi(p + 6);
+            }
+
+            int my_time = current_board.white_to_move ? wtime : btime;
+
+            int max_depth = 999;
+            time_limit = 0;
+            if (my_time > 0) {
+                max_depth = 64;
+                time_limit = (my_time - move_overhead) / 30;
+                if (time_limit < 1) {
+                    time_limit = 1;
+                }
+            }
+
+            int bestMove[3] = {0, 0, 0};
+            Iterative_Deepening(&current_board, max_depth, bestMove);
 
             print_uci_move(bestMove[0], bestMove[1], bestMove[2]);
             fflush(stdout);

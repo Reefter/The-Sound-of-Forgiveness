@@ -6,6 +6,7 @@
 #define INF 33000
 
 #include <stdbool.h>
+#include <time.h>
 
 enum PieceType {
     NONE = 0,
@@ -21,6 +22,15 @@ enum Color {
     WHITE = 8,
     BLACK = 16
 };
+
+extern clock_t search_start;
+extern int time_limit;
+extern int stop_search;
+extern int move_overhead;
+
+static inline int elapsed_ms(void) {
+    return (clock() - search_start) * 1000 / CLOCKS_PER_SEC;
+}
 
 
 typedef struct{
@@ -104,6 +114,7 @@ int SearchAllCaptures(int alpha, int beta, const Board *board);
 int Search(int depth, int ply, const Board *board, int bestMove[3], int alpha, int beta);
 unsigned long long Perft(int depth, const Board *board);
 void PrintPerftTable(int maxDepth, const Board *board);
+int Iterative_Deepening(const Board *board, int max_depth, int bestMove[3]);
 
 
 /* ---- uci.c ---- */
